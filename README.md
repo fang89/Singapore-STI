@@ -35,6 +35,7 @@ build step, no dependencies. Run the fetch scripts from inside this folder.
 | `profiles.js` | One-line company blurbs + live market caps |
 | `fetch_data.py` | Refreshes `data.js` from Yahoo Finance (`pip install yfinance`) |
 | `fetch_earnings.py` | Refreshes `earnings.js` |
+| `fetch_benchmarks.py` | Refreshes `benchmarks.js` (S&P 500, Nasdaq, Hang Seng, Nikkei, Bitcoin, gold) |
 | `fetch_logos.py` | Refreshes `logos.js` |
 | `fetch_profiles.py` | Refreshes `profiles.js` (market caps; blurbs curated inside it) |
 
@@ -42,6 +43,7 @@ build step, no dependencies. Run the fetch scripts from inside this folder.
 
 ```bash
 python3 fetch_data.py       # prices
+python3 fetch_benchmarks.py # comparison benchmarks
 python3 fetch_earnings.py   # earnings history
 python3 fetch_logos.py      # logos (rarely needed)
 python3 fetch_profiles.py   # market caps
