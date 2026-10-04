@@ -1,4 +1,4 @@
-/* STI dashboard: section 08 of the SG Household Money Guide.
+/* STI dashboard: section 08 of the SG Finance.
    Loaded on demand by index.html after the data files (data.js, benchmarks.js,
    logos.js, earnings.js, profiles.js). Markup lives in index.html under #sti-app. */
 (function () {

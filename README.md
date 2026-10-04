@@ -1,4 +1,4 @@
-# STI Dashboard — section 08 of the SG Household Money Guide
+# STI Dashboard — section 08 of the SG Finance
 
 Interactive dashboard for the Straits Times Index and its 30 constituents:
 daily closes back to **December 1987** for the index (2000s onward for most
