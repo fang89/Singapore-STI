@@ -8,7 +8,7 @@
 
 <br>
 
-<a href="https://fang89.github.io/Singapore-STI/"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/sti-chart-dark.png"><img src="docs/screenshots/sti-chart-light.png" alt="STI dashboard: DBS share price over the past year with earnings beats and misses annotated" width="760"></picture></a>
+<a href="https://fang89.github.io/Singapore-STI/"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/sti-demo-dark.gif"><img src="docs/screenshots/sti-demo-light.gif" alt="STI dashboard in motion: 38 years of the index on a log scale, a zoom into the 2008 crisis, DBS earnings beats and misses, and the STI against the S&amp;P 500 and Hang Seng" width="880"></picture></a>
 
 </div>
 
@@ -23,9 +23,6 @@ This puts the context on the chart: 46 hand-picked macro and local events (Barin
 crisis, SARS, Lehman, the property cooling rounds, COVID, the MAS S$5b revival plan), every
 reported earnings print per name marked as a beat or miss against consensus EPS, and two
 indicators that answer "where are we in the cycle?" without pretending to call the next print.
-
-It started as a section of [SG Finance](https://fang89.github.io/Singapore-personal-finance/) and
-was spun out because it's a market tool, not a household budgeting one.
 
 ## What's on the screen
 
