@@ -1,6 +1,6 @@
-/* STI dashboard: section 08 of the SG Finance.
-   Loaded on demand by index.html after the data files (data.js, benchmarks.js,
-   logos.js, earnings.js, profiles.js). Markup lives in index.html under #sti-app. */
+/* STI dashboard.
+   Loaded by index.html after the data files (data.js, benchmarks.js, logos.js,
+   earnings.js, profiles.js) and indicators.js. Markup lives in index.html under #sti-app. */
 (function () {
 "use strict";
 /* ---------------- data & config ---------------- */
@@ -13,6 +13,7 @@ const BENCH_ORDER = [        // fixed color assignment — color follows the ben
 const LOGOS = window.STI_LOGOS || {};
 const EARN = window.STI_EARNINGS || {};
 const PROFILES = window.STI_PROFILES || {};
+const IND = window.STI_IND;
 document.getElementById("sti-genDate").textContent = "fetched " + window.STI_DATA.generated;
 
 const CATS = {
@@ -115,6 +116,7 @@ const state = {
   cats: new Set(Object.keys(CATS)),
   sel: -1,                 // selected event index
   preset: "1Y",
+  trend: true,             // 200-day average + below-average shading
 };
 
 /* ---------------- helpers ---------------- */
@@ -143,8 +145,9 @@ const extent = s => [s.d[0], s.d[s.d.length - 1]];
 /* ---------------- canvases ---------------- */
 const wrap = $("sti-chartWrap"), base = $("sti-base"), overlay = $("sti-overlay");
 const ovWrap = $("sti-ovWrap"), ovCanvas = $("sti-ovCanvas");
+const moodWrap = $("sti-moodWrap"), moodCanvas = $("sti-moodCanvas");
 const PAD = { l: 52, r: 14, t: 28, b: 26 };
-let W = 0, H = 0, OW = 0, OH = 0;
+let W = 0, H = 0, OW = 0, OH = 0, MH = 0;
 
 function sizeCanvases() {
   const dpr = window.devicePixelRatio || 1;
@@ -153,6 +156,9 @@ function sizeCanvases() {
   OW = ovWrap.clientWidth; OH = ovWrap.clientHeight;
   ovCanvas.width = OW * dpr; ovCanvas.height = OH * dpr;
   ovCanvas.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+  MH = moodWrap.clientHeight;
+  moodCanvas.width = W * dpr; moodCanvas.height = MH * dpr;
+  moodCanvas.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 const xPx = day => PAD.l + (day - state.t0) / (state.t1 - state.t0) * (W - PAD.l - PAD.r);
@@ -272,6 +278,10 @@ function renderMain() {
   let lo = Infinity, hi = -Infinity;
   const toMain = v => cmp ? reb(v, mainBase) : v;
   for (let i = i0; i < i1; i++) { const v = toMain(s.c[i]); if (v < lo) lo = v; if (v > hi) hi = v; }
+  if (state.trend && !cmp) {                  // keep the 200-day average on the chart too
+    const ma = IND.trendRegime(state.ticker).ma;
+    for (let i = i0; i < i1; i++) if (!isNaN(ma[i])) { if (ma[i] < lo) lo = ma[i]; if (ma[i] > hi) hi = ma[i]; }
+  }
   for (const cp of curComps)
     for (let i = cp.j0; i < cp.j1; i++) { const v = reb(cp.sr.c[i], cp.base); if (v < lo) lo = v; if (v > hi) hi = v; }
   const padF = logNow ? 1.06 : (hi - lo) * 0.07 || Math.abs(lo) * 0.05 || 1;
@@ -317,6 +327,7 @@ function renderMain() {
     ctx.strokeStyle = col; ctx.lineWidth = 1.75; ctx.lineJoin = "round"; ctx.stroke();
     ends.push({ name: cp.sr.name, col, y: yPx(cpts[cpts.length - 1][1]) });
   }
+  if (state.trend && !cmp) drawTrend(ctx, s, i0, i1);
   ctx.beginPath();
   pts.forEach(([x, v], k) => k ? ctx.lineTo(x, yPx(v)) : ctx.moveTo(x, yPx(v)));
   ctx.strokeStyle = seriesCol; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
@@ -397,6 +408,77 @@ function renderMain() {
   $("sti-rangeLabel").textContent = dstr(state.t0, true) + " — " + dstr(state.t1, true);
 }
 
+/* ---------------- trend: 200-day average, and shading where price sits below it ---------------- */
+function drawTrend(ctx, s, i0, i1) {
+  const ma = IND.trendRegime(state.ticker).ma;
+  // shade each run of days that closed below the average
+  ctx.fillStyle = css("--down"); ctx.globalAlpha = 0.07;
+  let runStart = -1;
+  for (let i = i0; i <= i1; i++) {
+    const below = i < i1 && !isNaN(ma[i]) && s.c[i] < ma[i];
+    if (below && runStart < 0) runStart = i;
+    if (!below && runStart >= 0) {
+      const xa = xPx(s.d[runStart]), xb = xPx(s.d[Math.min(i, s.d.length - 1)]);
+      ctx.fillRect(xa, PAD.t, Math.max(1, xb - xa), H - PAD.t - PAD.b);
+      runStart = -1;
+    }
+  }
+  ctx.globalAlpha = 1;
+  // the average itself, dashed
+  ctx.beginPath();
+  let pen = false;
+  const step = Math.max(1, Math.floor((i1 - i0) / (W - PAD.l - PAD.r)));
+  for (let i = i0; i < i1; i += step) {
+    if (isNaN(ma[i])) { pen = false; continue; }
+    const x = xPx(s.d[i]), y = yPx(ma[i]);
+    pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true;
+  }
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = css("--ink-2"); ctx.lineWidth = 1.3; ctx.stroke(); ctx.setLineDash([]);
+}
+
+/* ---------------- mood strip: the STI's market mood, on the main chart's time axis ---------------- */
+const BAND_VAR = { xfear: "--down", fear: "--cat-earnings", neutral: "--muted", greed: "--cat-sg", xgreed: "--up" };
+function renderMood() {
+  const ctx = moodCanvas.getContext("2d");
+  ctx.clearRect(0, 0, W, MH);
+  const top = 16, bot = MH - 4, yM = v => bot - v / 100 * (bot - top);
+  // fear and greed zones
+  ctx.globalAlpha = 0.09;
+  ctx.fillStyle = css("--down"); ctx.fillRect(PAD.l, yM(20), W - PAD.l - PAD.r, yM(0) - yM(20));
+  ctx.fillStyle = css("--up"); ctx.fillRect(PAD.l, yM(100), W - PAD.l - PAD.r, yM(80) - yM(100));
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.l, Math.round(yM(50)) + 0.5); ctx.lineTo(W - PAD.r, Math.round(yM(50)) + 0.5); ctx.stroke();
+  ctx.font = "10.5px Inter, system-ui, sans-serif"; ctx.fillStyle = css("--muted");
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (const [v, t] of [[90, "greed"], [50, "50"], [10, "fear"]]) ctx.fillText(t, PAD.l - 7, yM(v));
+  ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = css("--ink-2");
+  ctx.font = "600 10.5px Inter, system-ui, sans-serif";
+  ctx.fillText("STI market mood, 0–100", PAD.l + 2, 1);
+
+  const d = IND.d, m = IND.mood;
+  let j0 = Math.max(0, lowerBound(d, state.t0) - 1), j1 = Math.min(d.length, lowerBound(d, state.t1 + 1) + 1);
+  ctx.save(); ctx.beginPath(); ctx.rect(PAD.l, 0, W - PAD.l - PAD.r, MH); ctx.clip();
+  ctx.beginPath(); let pen = false;
+  const step = Math.max(1, Math.floor((j1 - j0) / (W - PAD.l - PAD.r)));
+  for (let i = j0; i < j1; i += step) {
+    if (isNaN(m[i])) { pen = false; continue; }
+    const x = xPx(d[i]), y = yM(m[i]);
+    pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true;
+  }
+  ctx.strokeStyle = css("--ink-2"); ctx.lineWidth = 1.4; ctx.lineJoin = "round"; ctx.stroke();
+  ctx.restore();
+  if (state.t1 < IND.firstMoodDay) {
+    ctx.fillStyle = css("--muted"); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "11px Inter, system-ui, sans-serif";
+    ctx.fillText("Mood starts " + dstr(IND.firstMoodDay, true), (PAD.l + W - PAD.r) / 2, (top + bot) / 2);
+  }
+}
+function moodAt(day) {
+  if (day < IND.firstMoodDay - 3) return null;
+  const i = nearestIdx({ d: IND.d }, day), v = IND.mood[i];
+  return isNaN(v) ? null : { v, band: IND.bandOf(v) };
+}
+
 /* ---------------- overview render ---------------- */
 function renderOverview() {
   const ctx = ovCanvas.getContext("2d");
@@ -420,7 +502,7 @@ function renderOverview() {
 /* ---------------- overlay: crosshair + tooltip ---------------- */
 const tooltip = $("sti-tooltip");
 const evMarkers = [];
-function clearOverlay() { overlay.getContext("2d").clearRect(0, 0, W, H); tooltip.style.display = "none"; }
+function clearOverlay() { overlay.getContext("2d").clearRect(0, 0, W, H); tooltip.style.display = "none"; renderMood(); }
 function hoveredEvent(mx, my) {
   let best = null, bestD = 11;                    // generous hit radius around the dot
   for (const m of evMarkers) {
@@ -450,6 +532,12 @@ function drawOverlay(mx, my) {
     ctx.fillStyle = css(cp.cssVar); ctx.fill();
     ctx.strokeStyle = css("--surface-1"); ctx.lineWidth = 2; ctx.stroke();
   }
+  renderMood();
+  {
+    const mc = moodCanvas.getContext("2d");
+    mc.strokeStyle = css("--baseline"); mc.lineWidth = 1;
+    mc.beginPath(); mc.moveTo(Math.round(sx) + 0.5, 14); mc.lineTo(Math.round(sx) + 0.5, MH); mc.stroke();
+  }
   ctx.beginPath(); ctx.arc(sx, sy, 4.5, 0, Math.PI * 2);
   ctx.fillStyle = css("--series-1"); ctx.fill();
   ctx.strokeStyle = css("--surface-1"); ctx.lineWidth = 2; ctx.stroke();
@@ -461,6 +549,18 @@ function drawOverlay(mx, my) {
   add("p", fmtP(s.c[idx], priceDp(s.c[idx])));
   const first = s.c[Math.min(lowerBound(s.d, state.t0), s.c.length - 1)];
   add("r", fmtPct((s.c[idx] / first - 1) * 100) + " over shown range");
+  if (state.trend && !cmp) {
+    const ma = IND.trendRegime(state.ticker).ma[idx];
+    if (!isNaN(ma)) add("r", fmtPct((s.c[idx] / ma - 1) * 100) + " vs 200-day average");
+  }
+  const md = moodAt(s.d[idx]);
+  if (md) {
+    const row = document.createElement("div"); row.className = "ev";
+    row.style.setProperty("--c", css(BAND_VAR[md.band.key]));
+    const key = document.createElement("span"); key.className = "key";
+    const span = document.createElement("span"); span.textContent = "STI mood " + Math.round(md.v) + " · " + md.band.label;
+    row.append(key, span); tooltip.appendChild(row);
+  }
   for (const h of hov) {
     const row = document.createElement("div"); row.className = "ev";
     row.style.setProperty("--c", css(h.cssVar));
@@ -585,6 +685,7 @@ function refreshChrome() {
   });
   refreshEventList();
   buildYearTable();
+  refreshTrendBox();
 }
 
 function refreshEventList() {
@@ -659,6 +760,92 @@ function buildYearTable() {
   }
 }
 
+/* ---------------- market mood panel ---------------- */
+const pctTxt = (v, dp = 1) => (v >= 0 ? "+" : "\u2212") + Math.abs(v * 100).toFixed(dp) + "%";
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function buildMoodPanel() {
+  const m = IND.mood, n = m.length;
+  let i = n - 1; while (i > 0 && isNaN(m[i])) i--;
+  const v = m[i], band = IND.bandOf(v);
+  $("sti-moodAsOf").textContent = "as of " + dstr(IND.d[i], true);
+
+  // the reading, and where it sits on 0-100
+  const now = $("sti-moodNow"); now.textContent = "";
+  now.style.setProperty("--c", `var(${BAND_VAR[band.key]})`);
+  const big = el("div", "mood-big");
+  big.append(el("span", "mood-num", String(Math.round(v))), el("span", "mood-lbl", band.label));
+  const scale = el("div", "mood-scale");
+  for (const b of IND.BANDS) { const seg = el("span", "seg-" + b.key); seg.style.setProperty("--c", `var(${BAND_VAR[b.key]})`); scale.appendChild(seg); }
+  const pin = el("span", "pin"); pin.style.left = Math.min(100, Math.max(0, v)) + "%"; scale.appendChild(pin);
+  now.append(big, scale);
+
+  // components: today's raw reading and its 3-year percentile
+  const raw = IND.raw, fmt = {
+    trend: x => pctTxt(x) + " vs 200-day avg",
+    breadth: x => Math.round(x * 100) + "% of members above",
+    highsLows: x => pctTxt(x, 0) + " net new highs",
+    drawdown: x => x > -0.0005 ? "at its 52-week high" : pctTxt(x) + " below 52-week high",
+    calm: x => (x * 100).toFixed(1) + "% annualised volatility",
+  };
+  const ul = $("sti-moodComps"); ul.textContent = "";
+  for (const c of IND.COMPONENTS) {
+    const p = IND.pct[c.key][i], r = raw[c.key][i];
+    const li = el("li"); li.title = c.what;
+    const top = el("div", "ct"); top.append(el("span", "cn", c.label), el("span", "cv", isNaN(r) ? "—" : fmt[c.key](r)));
+    const bar = el("div", "cbar"); const fill = el("span"); fill.style.width = (isNaN(p) ? 0 : p * 100) + "%"; bar.appendChild(fill);
+    const pv = el("span", "cp", isNaN(p) ? "—" : Math.round(p * 100));
+    li.append(top, bar, pv); ul.appendChild(li);
+  }
+
+  // what the STI did next, by band
+  const tbl = $("sti-moodTable"); tbl.textContent = "";
+  const hr = tbl.createTHead().insertRow();
+  for (const h of ["Mood", "Days", "Spells", "1 month", "3 months", "6 months", "12 months", "Years higher"]) hr.appendChild(el("th", null, h));
+  const tb = tbl.createTBody();
+  const row = (label, st, cls, key) => {
+    const tr = tb.insertRow(); if (cls) tr.className = cls;
+    const th = el("th"); th.scope = "row";
+    if (key) { const k = el("span", "key"); k.style.setProperty("--c", `var(${BAND_VAR[key]})`); th.appendChild(k); }
+    th.appendChild(document.createTextNode(label)); tr.appendChild(th);
+    tr.insertCell().textContent = st.days.toLocaleString("en-SG");
+    tr.insertCell().textContent = st.episodes != null ? st.episodes : "";
+    for (const h of IND.HORIZONS) {
+      const c = tr.insertCell(), x = st.h[h];
+      if (!x) { c.textContent = "—"; continue; }
+      const a = el("span", x.mean >= 0 ? "pos" : "neg", pctTxt(x.mean));
+      c.append(a, el("small", null, Math.round(x.up * 100) + "% up"));
+    }
+    tr.insertCell().textContent = st.years.n ? `${st.years.up} of ${st.years.n}` : "—";
+  };
+  for (const r of IND.moodTable) row(r.band.label, r, r.band.key === band.key ? "now" : "", r.band.key);
+  row("All days", IND.moodAll, "all");
+  $("sti-moodSince").textContent = dstr(IND.firstMoodDay) + " to " + dstr(IND.d[n - 1]);
+}
+
+function refreshTrendBox() {
+  const sym = state.ticker, s = cur(), tr = IND.trendRegime(sym), ma = tr.ma, n = s.c.length;
+  $("sti-trendName").textContent = s.name;
+  const msg = $("sti-trendNow"); msg.textContent = "";
+  if (isNaN(ma[n - 1])) { msg.textContent = "Not enough history yet for a 200-day average."; return; }
+  const gap = s.c[n - 1] / ma[n - 1] - 1, above = gap >= 0;
+  let k = n - 1; while (k > 0 && !isNaN(ma[k - 1]) && (s.c[k - 1] >= ma[k - 1]) === above) k--;
+  const strong = el("strong", above ? "pos" : "neg", (above ? "Above" : "Below") + " its 200-day average");
+  msg.append(strong, document.createTextNode(` by ${Math.abs(gap * 100).toFixed(1)}%, since ${dstr(s.d[k], true)}.`));
+  const tbl = $("sti-trendTable"); tbl.textContent = "";
+  const hr = tbl.createTHead().insertRow();
+  for (const h of ["The day after closing…", "Days", "Return, annualised", "Volatility, annualised"]) hr.appendChild(el("th", null, h));
+  const tb = tbl.createTBody();
+  for (const [label, st, cls] of [["above the average", tr.up, "pos"], ["below the average", tr.down, "neg"]]) {
+    const r = tb.insertRow(); if ((cls === "pos") === above) r.className = "now";
+    const th = el("th", null, label); th.scope = "row"; r.appendChild(th);
+    if (!st) { r.insertCell().textContent = "—"; r.insertCell(); r.insertCell(); continue; }
+    r.insertCell().textContent = st.days.toLocaleString("en-SG");
+    r.insertCell().appendChild(el("span", st.annRet >= 0 ? "pos" : "neg", pctTxt(st.annRet)));
+    r.insertCell().textContent = (st.annVol * 100).toFixed(1) + "%";
+  }
+  $("sti-trendSince").textContent = "since " + dstr(tr.since);
+}
+
 /* ---------------- build static chrome ---------------- */
 function buildControls() {
   for (const name of ["1W", "1M", "3M", "1Y", "5Y", "Max"]) {
@@ -695,6 +882,20 @@ function buildControls() {
     $("sti-benchChips").appendChild(c);
   }
   if (!Object.keys(BENCH).length) $("sti-benchHint").style.display = "none";
+  {
+    const c = document.createElement("button");
+    c.type = "button"; c.className = "chip"; c.setAttribute("aria-pressed", String(state.trend));
+    c.style.setProperty("--c", "var(--ink-2)");
+    const dot = document.createElement("span"); dot.className = "dot";
+    c.append(dot, document.createTextNode("200-day average"));
+    c.title = "Dashed line: the 200-day average. Red shading: days the price closed below it.";
+    c.addEventListener("click", () => {
+      state.trend = !state.trend;
+      c.setAttribute("aria-pressed", String(state.trend));
+      renderMain(); clearOverlay();
+    });
+    $("sti-indChips").appendChild(c);
+  }
   $("sti-scaleSeg").addEventListener("click", ev => {
     const b = ev.target.closest("button"); if (!b) return;
     state.log = b.dataset.scale === "log";
@@ -830,12 +1031,13 @@ ovWrap.addEventListener("pointermove", ev => {
 /* ---------------- theme: follow the page's toggle ---------------- */
 new MutationObserver(() => { renderMain(); renderOverview(); clearOverlay(); refreshChrome(); })
   .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderMain(); renderOverview(); refreshChrome(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderMain(); renderOverview(); renderMood(); refreshChrome(); });
 
 /* ---------------- boot ---------------- */
 buildControls();
 buildSidebar();
-new ResizeObserver(() => { sizeCanvases(); renderMain(); renderOverview(); }).observe(wrap);
+buildMoodPanel();
+new ResizeObserver(() => { sizeCanvases(); renderMain(); renderOverview(); renderMood(); }).observe(wrap);
 sizeCanvases();
 switchTicker("D05.SI");
 applyPreset("1Y");

@@ -422,6 +422,49 @@ thead th { background: var(--accent-tint); color: var(--accent-ink); }
   #sti-app .ev-card .tt { font-weight: 600; font-size: 13px; margin: 1px 0 2px; }
   #sti-app .ev-card .bb { font-size: 12px; color: var(--ink-2); }
 
+  /* trend + market mood */
+  #sti-app .mood-wrap { position: relative; height: 78px; margin-top: 2px; }
+  #sti-app .mood-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #sti-app .mood-panel { margin-top: 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px 12px; }
+  #sti-app .mood-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  #sti-app .mood-head h2 { font-size: 15px; margin: 0; }
+  #sti-app .mood-panel h3 { font-size: 13px; font-weight: 650; color: var(--ink-1); margin: 0 0 8px; letter-spacing: 0; }
+  #sti-app .mood-grid { display: grid; grid-template-columns: minmax(240px, 0.8fr) 1.4fr; gap: 22px; margin-top: 12px; }
+  @container sti (max-width: 860px) { #sti-app .mood-grid { grid-template-columns: 1fr; } }
+  #sti-app .mood-big { display: flex; align-items: baseline; gap: 10px; }
+  #sti-app .mood-num { font-size: 40px; font-weight: 700; line-height: 1; color: var(--c); font-variant-numeric: tabular-nums; }
+  #sti-app .mood-lbl { font-size: 16px; font-weight: 650; color: var(--c); }
+  #sti-app .mood-scale { position: relative; display: flex; height: 8px; margin: 10px 0 14px; border-radius: 4px; overflow: visible; }
+  #sti-app .mood-scale span[class^="seg-"] { flex: 1; background: var(--c); opacity: .55; }
+  #sti-app .mood-scale span[class^="seg-"]:first-child { border-radius: 4px 0 0 4px; }
+  #sti-app .mood-scale span.seg-xgreed { border-radius: 0 4px 4px 0; }
+  #sti-app .mood-scale .pin { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--ink-1); box-shadow: 0 0 0 2px var(--surface-1); }
+  #sti-app .mood-comps { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  #sti-app .mood-comps li { display: grid; grid-template-columns: 1fr 30px; column-gap: 8px; align-items: center; }
+  #sti-app .mood-comps .ct { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+  #sti-app .mood-comps .cn { font-weight: 600; }
+  #sti-app .mood-comps .cv { color: var(--ink-2); text-align: right; }
+  #sti-app .mood-comps .cbar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  #sti-app .mood-comps .cbar span { display: block; height: 100%; background: var(--series-1); border-radius: 3px; }
+  #sti-app .mood-comps .cp { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  #sti-app .mood-note { margin-top: 10px; line-height: 1.5; }
+  #sti-app .mood-tablewrap { overflow-x: auto; }
+  #sti-app .mood-table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  #sti-app .mood-table th, #sti-app .mood-table td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; background: none; color: var(--ink-1); }
+  #sti-app .mood-table thead th { color: var(--ink-2); font-weight: 600; font-size: 11.5px; }
+  #sti-app .mood-table th:first-child { text-align: left; }
+  #sti-app .mood-table tbody th { font-weight: 600; }
+  #sti-app .mood-table td small { display: block; font-size: 10.5px; color: var(--muted); }
+  #sti-app .mood-table .key { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 6px; }
+  #sti-app .mood-table tr.now th, #sti-app .mood-table tr.now td { background: color-mix(in srgb, var(--series-1) 9%, transparent); }
+  #sti-app .mood-table tr.all th, #sti-app .mood-table tr.all td { color: var(--ink-2); border-bottom: 0; }
+  #sti-app .trend-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--grid); }
+  #sti-app .trend-box p { font-size: 13.5px; margin: 0 0 8px; }
+  #sti-app .trend-box .mood-table { max-width: 560px; }
+  #sti-app .mood-method { margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+  #sti-app .mood-method summary { cursor: pointer; color: var(--ink-1); font-weight: 600; }
+  #sti-app .mood-method div { display: grid; gap: 8px; margin-top: 8px; max-width: 78ch; line-height: 1.55; }
+  #sti-app .mood-method b { color: var(--ink-1); }
   #sti-app details.tbl { margin-top: 14px; }
   #sti-app details.tbl summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
   #sti-app details.tbl table { border-collapse: collapse; margin-top: 8px; font-size: 12.5px; }
@@ -481,6 +524,8 @@ thead th { background: var(--accent-tint); color: var(--accent-ink); }
     <div class="chips" id="sti-catChips" role="group" aria-label="Event categories"></div>
     <span class="hint" id="sti-benchHint">compare</span>
     <div class="chips" id="sti-benchChips" role="group" aria-label="Compare against benchmarks"></div>
+    <span class="hint">indicators</span>
+    <div class="chips" id="sti-indChips" role="group" aria-label="Indicators"></div>
     <span class="hint">scroll to zoom · drag to pan · click a flag or card for the story</span>
   </div>
 
@@ -498,8 +543,62 @@ thead th { background: var(--accent-tint); color: var(--accent-ink); }
           <canvas id="sti-base"></canvas><canvas id="sti-overlay"></canvas>
           <div class="tooltip" id="sti-tooltip"></div>
         </div>
+        <div class="mood-wrap" id="sti-moodWrap"><canvas id="sti-moodCanvas"></canvas></div>
         <div class="ov-wrap" id="sti-ovWrap"><canvas id="sti-ovCanvas"></canvas></div>
       </div>
+
+      <section class="mood-panel" aria-labelledby="sti-moodTitle">
+        <div class="mood-head">
+          <h2 id="sti-moodTitle">Market mood</h2>
+          <span class="hint" id="sti-moodAsOf"></span>
+        </div>
+        <div class="mood-grid">
+          <div>
+            <div class="mood-now" id="sti-moodNow"></div>
+            <ul class="mood-comps" id="sti-moodComps"></ul>
+            <p class="hint mood-note">Each bar is today's reading ranked against the last three years (100 = the most
+              bullish reading in that time). The mood is their average.</p>
+          </div>
+          <div>
+            <h3>What the STI did next, by mood <span class="hint" id="sti-moodSince"></span></h3>
+            <div class="mood-tablewrap"><table class="mood-table" id="sti-moodTable"></table></div>
+            <p class="hint mood-note">Average STI price change over the following 1, 3, 6 and 12 months, and how often it was
+              higher. <b>Spells</b> counts separate visits to each band, which is the real sample size: the days overlap
+              heavily. <b>Years higher</b> averages the 12-month result within each calendar year first, then
+              counts the years that ended up, so one long crash or boom cannot dominate. Price index only, so
+              dividends of roughly 3–4% a year are not included.</p>
+          </div>
+        </div>
+
+        <div class="trend-box">
+          <h3>Trend: <span id="sti-trendName"></span> <span class="hint" id="sti-trendSince"></span></h3>
+          <p id="sti-trendNow"></p>
+          <div class="mood-tablewrap"><table class="mood-table" id="sti-trendTable"></table></div>
+        </div>
+
+        <details class="mood-method">
+          <summary>How this is built, and how far to trust it</summary>
+          <div>
+            <p><b>Mood</b> blends five readings taken from prices alone: the STI against its 200-day average,
+              the share of its members above their own 200-day averages, members at 52-week highs minus those at
+              52-week lows, the STI's distance below its 52-week high, and one-month volatility (inverted). Each is
+              ranked against its own last three years, and the five ranks are averaged. Every value uses only
+              prices known on that day.</p>
+            <p><b>What the history shows.</b> The steadiest result is at the fearful end: in most years that saw
+              extreme fear, the STI was higher a year later. Extreme greed has not been a sell signal, but its strong
+              average comes from a few years; year by year it was close to a coin toss. Each band rests on only 14–18
+              separate spells, so treat these as tendencies, not rules.</p>
+            <p><b>The 200-day average</b> is the indicator with the longest research record. On the STI its value
+              has been in risk, not return: days below the average were about 1.5 times as volatile and earned
+              close to nothing. Switching in and out on it would have roughly halved the worst fall since 1987,
+              but trading on it had no reliable edge for next-month returns once tested out of sample.</p>
+            <p><b>Limits.</b> Breadth and highs/lows use today's 30 members, so before 2008 they leave out companies
+              that later dropped from the index. There are no volume, options or survey data for Singapore here,
+              so this is a price-based proxy for sentiment, not a direct measure. Not investment advice.
+              <a href="https://github.com/fang89/Singapore-STI/blob/main/METHODOLOGY.md">Full methodology and tests</a>.</p>
+          </div>
+        </details>
+      </section>
 
       <div class="ev-detail" id="sti-evDetail">
         <button class="x" type="button" aria-label="Clear selection" id="sti-evClose">✕</button>
@@ -551,7 +650,7 @@ thead th { background: var(--accent-tint); color: var(--accent-ink); }
   label();
 
   /* ---------- load the market data, then the chart ---------- */
-  ["data.js", "benchmarks.js", "logos.js", "earnings.js", "profiles.js", "app.js"].forEach(function (f) {
+  ["data.js", "benchmarks.js", "logos.js", "earnings.js", "profiles.js", "indicators.js", "app.js"].forEach(function (f) {
     var s = document.createElement("script");
     s.src = f;
     s.async = false;   // download in parallel, run in order
