@@ -2,8 +2,6 @@
 
 # 📈 Singapore STI
 
-### Thirty-eight years of Singapore's market, annotated
-
 An interactive chart of the Straits Times Index and all 30 of its constituents,<br>
 marked with the crises, policy changes and earnings results that moved them.
 
