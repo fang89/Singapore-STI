@@ -1,8 +1,564 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
-<title>STI Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url=../#sti">
-<link rel="canonical" href="../#sti">
-<p style="font-family:system-ui,sans-serif;padding:24px">The STI dashboard is now section 08 of the
-<a href="../#sti">SG Finance</a>.</p>
+<title>Singapore STI</title>
+<meta name="description" content="An interactive chart of the Straits Times Index and its 30 constituents since 1987, annotated with market crises, Singapore events, policy changes and every earnings result.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* ============================================================
+   Tokens — light is the base; dark redefines tokens only.
+   ============================================================ */
+:root {
+  --paper:        #FFFFFF;
+  --raised:       #FFFFFF;
+  --band:         #F4F7FC;
+  --side:         #F7F9FD;
+  --ink:          #0F1B33;
+  --ink-soft:     #334155;
+  --ink-faint:    #64748B;
+  --rule:         #E2E8F2;
+  --rule-strong:  #CBD5E3;
+  --accent:       #1D4ED8;
+  --accent-ink:   #1E40AF;
+  --accent-tint:  #EFF5FF;
+  --accent-line:  #BFD4FE;
+  --caution:      #B45309;
+  --caution-tint: #FFFBEB;
+  --caution-line: #FDE68A;
+  --shadow:       0 1px 2px rgba(15,27,51,.04), 0 1px 3px rgba(15,27,51,.06);
+
+  --f-text: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  --measure: 72ch;
+  --main: 1240px;
+  --sidebar: 248px;
+  --bar: 56px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:        #0A1020;
+    --raised:       #0F172A;
+    --band:         #131D33;
+    --side:         #0C1426;
+    --ink:          #E6ECF5;
+    --ink-soft:     #C3CDDC;
+    --ink-faint:    #8E9BB0;
+    --rule:         #1F2A40;
+    --rule-strong:  #2C3A55;
+    --accent:       #60A5FA;
+    --accent-ink:   #93C5FD;
+    --accent-tint:  #0F2042;
+    --accent-line:  #1E3A8A;
+    --caution:      #FBBF24;
+    --caution-tint: #231B0B;
+    --caution-line: #78350F;
+    --shadow:       0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:        #0A1020;
+  --raised:       #0F172A;
+  --band:         #131D33;
+  --side:         #0C1426;
+  --ink:          #E6ECF5;
+  --ink-soft:     #C3CDDC;
+  --ink-faint:    #8E9BB0;
+  --rule:         #1F2A40;
+  --rule-strong:  #2C3A55;
+  --accent:       #60A5FA;
+  --accent-ink:   #93C5FD;
+  --accent-tint:  #0F2042;
+  --accent-line:  #1E3A8A;
+  --caution:      #FBBF24;
+  --caution-tint: #231B0B;
+  --caution-line: #78350F;
+  --shadow:       0 1px 2px rgba(0,0,0,.4);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--bar) + 16px); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--f-text);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-ink); text-decoration: underline; text-decoration-color: var(--accent-line); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+h1, h2, h3, h4 { color: var(--ink); text-wrap: balance; margin: 0; font-weight: 650; letter-spacing: -.015em; }
+p, ul, ol { margin: 0; }
+strong { color: var(--ink); font-weight: 600; }
+em { font-style: italic; }
+code, .num { font-family: var(--f-text); font-variant-numeric: tabular-nums; }
+code { font-family: var(--f-mono); font-size: .86em; background: var(--band); border: 1px solid var(--rule); border-radius: 4px; padding: .08em .35em; color: var(--ink); }
+
+.mono-label {
+  font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ============================================================
+   Shell: top bar with dropdown navigation
+   ============================================================ */
+.topbar {
+  position: sticky; top: 0; z-index: 40; height: var(--bar);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar-in { height: 100%; padding: 0 24px; display: flex; align-items: center; gap: 20px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 650; color: var(--ink); text-decoration: none; white-space: nowrap; letter-spacing: -.01em; }
+.brand .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: var(--paper); display: grid; place-items: center; font-size: 12px; font-weight: 700; letter-spacing: 0; }
+#themeBtn {
+  margin-left: auto; flex: none; font: 500 13px var(--f-text); color: var(--ink-soft);
+  background: var(--raised); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+#themeBtn:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+.wrap { max-width: var(--main); margin: 0 auto; padding: 0 24px; }
+
+@media (max-width: 720px) {
+  .topbar-in { padding: 0 16px; gap: 10px; }
+  .wrap { padding: 0 16px; }
+}
+
+@media (max-width: 720px) {
+  #themeBtn { padding: 6px 10px; }
+}
+
+/* ============================================================
+   Sections
+   ============================================================ */
+.section { padding: 64px 0; border-bottom: 1px solid var(--rule); }
+.paged .section { border-bottom: 0; padding-bottom: 32px; }
+.pager { display: flex; gap: 12px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--rule); }
+.pager a { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: 10px; text-decoration: none; color: var(--ink); background: var(--paper); }
+.pager a:hover { border-color: var(--accent); }
+.pager a span { font-size: 12.5px; color: var(--ink-faint); }
+.pager a b { font-size: 16px; font-weight: 650; color: var(--accent-ink); }
+.pager .prev span::before { content: "← "; }
+.pager .next { text-align: right; }
+.pager .next span::after { content: " →"; }
+[hidden] { display: none !important; }
+.section-grid { display: block; }
+.rail { margin-bottom: 10px; }
+.rail .role { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); }
+.rail .rail-note, .rail-toc { display: none; }
+
+.body-col { display: grid; gap: 20px; }
+.body-col > p, .body-col > ul, .body-col > ol { max-width: var(--measure); }
+.body-col h2 { font-size: clamp(26px, 3.4vw, 32px); line-height: 1.2; letter-spacing: -.022em; font-weight: 700; max-width: 30ch; }
+.body-col h3 { font-size: 20px; line-height: 1.35; font-weight: 650; margin-top: 22px; letter-spacing: -.012em; }
+.lede { font-size: 18px; line-height: 1.65; color: var(--ink-soft); }
+ul.ticks, ol.steps { padding-left: 0; list-style: none; display: grid; gap: 12px; }
+ul.ticks li { padding-left: 22px; position: relative; }
+ul.ticks li::before { content: ""; position: absolute; left: 4px; top: .7em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+ol.steps { counter-reset: s; gap: 14px; }
+ol.steps li { padding-left: 40px; position: relative; counter-increment: s; }
+ol.steps li::before {
+  content: counter(s); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--accent-ink);
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+}
+
+/* ============================================================
+   Panels, tables, callouts
+   ============================================================ */
+.panel { background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.panel-head { padding: 14px 18px; border-bottom: 1px solid var(--rule); background: var(--band); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.panel-head .t { font-size: 15px; font-weight: 650; color: var(--ink); }
+.panel-head .s { font-size: 13px; color: var(--ink-faint); }
+.panel-body { padding: 18px; display: grid; gap: 16px; }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+caption { text-align: left; padding: 14px 18px 12px !important; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--raised); border-bottom: 1px solid var(--rule); }
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td { color: var(--ink-soft); }
+td:first-child { color: var(--ink); }
+thead th { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-faint); background: var(--band); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--band); }
+td.n, th.n { text-align: right; white-space: nowrap; }
+td.n { color: var(--ink); font-weight: 500; }
+td.wrap-ok { min-width: 24ch; }
+tr.is-best td { background: var(--accent-tint) !important; }
+tr.is-best td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+@media (max-width: 720px) {
+  table { font-size: 14px; }
+  th, td { padding: 10px 12px; }
+  td.wrap-ok { min-width: 20ch; }
+}
+.tight td:first-child { min-width: 12ch; }
+
+.note { border: 1px solid var(--accent-line); background: var(--accent-tint); padding: 16px 18px; border-radius: 10px; max-width: var(--measure); }
+.note.warn { border-color: var(--caution-line); background: var(--caution-tint); }
+.note .tag { display: block; font-size: 14.5px; font-weight: 650; color: var(--accent-ink); margin-bottom: 6px; letter-spacing: -.005em; }
+.note.warn .tag { color: var(--caution); }
+.note p { font-size: 15.5px; line-height: 1.65; }
+.note p + p { margin-top: 10px; }
+
+.tldr { background: var(--band); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; max-width: var(--measure); }
+.tldr .tag { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+.tldr ul { list-style: none; padding: 0; display: grid; gap: 10px; }
+.tldr li { padding-left: 28px; position: relative; font-size: 15.5px; line-height: 1.6; }
+.tldr li::before {
+  content: ""; position: absolute; left: 0; top: .3em; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent-tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%230F766E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;
+  border: 1px solid var(--accent-line);
+}
+
+.figrow { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.fig { padding: 16px 18px; display: grid; gap: 4px; align-content: start; background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); }
+.fig .k { font-size: 13px; font-weight: 500; color: var(--ink-faint); line-height: 1.4; }
+.fig .v { font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: -.025em; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.fig .m { font-size: 13.5px; color: var(--ink-faint); line-height: 1.5; }
+.fig .m strong { color: var(--ink-soft); }
+.fig.accent .v { color: var(--accent-ink); }
+
+/* STI dashboard tokens */
+:root {
+    --surface-1: #ffffff; --plane: #f4f7fc;
+    --ink-1: #0f1b33; --ink-2: #475569; --muted: #64748b;
+    --grid: #e2e8f2; --baseline: #cbd5e3; --border: rgba(15,27,51,0.10);
+    --series-1: #1d4ed8; --up: #006300; --down: #d03b3b;
+    --cat-crisis: #e34948; --cat-sg: #1baf7a; --cat-policy: #4a3aa7; --cat-milestone: #eda100; --cat-earnings: #eb6834;
+    --bm-gspc: #4a3aa7; --bm-ixic: #e87ba4; --bm-hsi: #e34948; --bm-n225: #1baf7a; --bm-btc: #eb6834; --bm-gold: #eda100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface-1: #0f172a; --plane: #0a1020;
+    --ink-1: #e6ecf5; --ink-2: #c3cddc; --muted: #8e9bb0;
+    --grid: #1f2a40; --baseline: #2c3a55; --border: rgba(255,255,255,0.10);
+    --series-1: #60a5fa; --up: #0ca30c; --down: #e66767;
+    --cat-crisis: #e66767; --cat-sg: #199e70; --cat-policy: #9085e9; --cat-milestone: #c98500; --cat-earnings: #d95926;
+    --bm-gspc: #9085e9; --bm-ixic: #d55181; --bm-hsi: #e66767; --bm-n225: #199e70; --bm-btc: #d95926; --bm-gold: #c98500;
+  }
+}
+:root[data-theme="dark"] {
+    --surface-1: #0f172a; --plane: #0a1020;
+    --ink-1: #e6ecf5; --ink-2: #c3cddc; --muted: #8e9bb0;
+    --grid: #1f2a40; --baseline: #2c3a55; --border: rgba(255,255,255,0.10);
+    --series-1: #60a5fa; --up: #0ca30c; --down: #e66767;
+    --cat-crisis: #e66767; --cat-sg: #199e70; --cat-policy: #9085e9; --cat-milestone: #c98500; --cat-earnings: #d95926;
+    --bm-gspc: #9085e9; --bm-ixic: #d55181; --bm-hsi: #e66767; --bm-n225: #199e70; --bm-btc: #d95926; --bm-gold: #c98500;
+}
+
+/* ============================================================
+   Blue-and-white accents
+   ============================================================ */
+.topbar { box-shadow: inset 0 3px 0 var(--accent); }
+.brand .logo { background: linear-gradient(135deg, var(--accent), var(--accent-ink)); color: #fff; }
+.layout { background: linear-gradient(180deg, var(--accent-tint) 0, var(--paper) 520px) no-repeat; }
+.masthead h1 { color: var(--ink); }
+.stamp span { background: var(--raised); border-color: var(--accent-line); }
+.toc-card { border-top: 3px solid var(--accent-line); }
+.toc-card:hover { border-top-color: var(--accent); }
+thead th { background: var(--accent-tint); color: var(--accent-ink); }
+.panel-head { background: var(--accent-tint); }
+.tldr { background: var(--raised); border-left: 3px solid var(--accent); }
+.fig.accent { border-top: 3px solid var(--accent); }
+.body-col h2 { color: var(--ink); }
+.body-col h3 { color: var(--accent-ink); }
+.embed-cap { font-size: 14px; color: var(--ink-faint); max-width: var(--measure); }
+
+/* ============================================================
+   STI dashboard (scoped to #sti-app; sizes by container)
+   ============================================================ */
+#sti-app {
+  container: sti / inline-size; margin-top: 24px; position: relative;
+  font-size: 14px; line-height: 1.45; color: var(--ink-1);
+}
+#sti-app .sti-loading { position: absolute; inset: 0 0 auto 0; padding: 48px 0; text-align: center; color: var(--ink-faint); font-size: 15px; }
+#sti-app.ready .sti-loading { display: none; }
+/* Before the data arrives, hold roughly the finished height so links to the
+   sections below do not land short when the dashboard fills in mid-scroll. */
+#sti-app:not(.ready) { min-height: 1425px; }
+@media (max-width: 760px) { #sti-app:not(.ready) { min-height: 1480px; } }
+@media (max-width: 640px) { #sti-app:not(.ready) { min-height: 1595px; } }
+@media (max-width: 520px) { #sti-app:not(.ready) { min-height: 1685px; } }
+@media (max-width: 420px) { #sti-app:not(.ready) { min-height: 1785px; } }
+@media (max-width: 340px) { #sti-app:not(.ready) { min-height: 1865px; } }
+#sti-app:not(.ready) > :not(.sti-loading) { visibility: hidden; }
+#sti-app th, #sti-app td { vertical-align: baseline; white-space: nowrap; }
+#sti-app thead th { text-transform: none; letter-spacing: 0; font-size: inherit; }
+#sti-app tbody tr:hover td { background: var(--surface-1); }
+#sti-app h2 { letter-spacing: 0; }
+#sti-app .sti-foot { margin-top: 22px; color: var(--muted); font-size: 12px; }
+  #sti-app .lg { width: 18px; height: 18px; border-radius: 4px; flex: none; object-fit: contain; background: #fff; padding: 2px; box-shadow: 0 0 0 1px var(--border); }
+  #sti-app .mono {
+    width: 18px; height: 18px; border-radius: 4px; flex: none;
+    background: color-mix(in srgb, var(--series-1) 16%, transparent); color: var(--series-1);
+    font-size: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+  }
+  #sti-app .theme-btn {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-2);
+    border-radius: 8px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  #sti-app .theme-btn:hover { color: var(--ink-1); }
+
+  #sti-app .tiles { display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(128px, 1fr)); gap: 10px; margin: 14px 0; }
+  @container sti (max-width: 1100px) { #sti-app .tiles { grid-template-columns: repeat(3, 1fr); } #sti-app .tile.profile { grid-column: 1 / -1; } }
+  @container sti (max-width: 800px) { #sti-app .tiles { grid-template-columns: 1fr 1fr; } #sti-app .tile.profile { grid-column: 1 / -1; } }
+  #sti-app .tile.profile .ph { display: flex; align-items: center; gap: 7px; }
+  #sti-app .tile.profile .ph .lg, #sti-app .tile.profile .ph .mono { width: 22px; height: 22px; }
+  #sti-app .tile.profile .pn { font-weight: 650; font-size: 14px; }
+  #sti-app .tile.profile .pb { font-size: 11.5px; line-height: 1.35; color: var(--ink-2); margin-top: 4px; }
+  #sti-app .tile.profile .pm { font-size: 13px; font-weight: 650; margin-top: 5px; }
+  #sti-app .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+  #sti-app .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  #sti-app .tile .v { font-size: 22px; font-weight: 650; margin-top: 2px; }
+  #sti-app .tile .s { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+  #sti-app .tile .vr { display: flex; align-items: baseline; gap: 7px; margin-top: 3px; }
+  #sti-app .tile .vr .vl { font-size: 11px; color: var(--muted); min-width: 24px; }
+  #sti-app .tile .vr .vv { font-size: 17px; font-weight: 650; }
+  #sti-app .pos { color: var(--up); } #sti-app .neg { color: var(--down); }
+
+  #sti-app .sti-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 10px 0 12px; }
+  #sti-app .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface-1); }
+  #sti-app .seg button {
+    border: 0; background: none; color: var(--ink-2); padding: 6px 11px;
+    font: inherit; font-size: 12.5px; cursor: pointer; border-right: 1px solid var(--border);
+  }
+  #sti-app .seg button:last-child { border-right: 0; }
+  #sti-app .seg button:hover { color: var(--ink-1); }
+  #sti-app .seg button[aria-pressed="true"] { background: var(--series-1); color: #fff; }
+  #sti-app .seg.dim { opacity: 0.45; pointer-events: none; }
+  #sti-app .chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+  #sti-app .chip {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-2);
+    border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px;
+  }
+  #sti-app .chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px var(--border); }
+  #sti-app .chip[aria-pressed="false"] { opacity: 0.45; }
+  #sti-app .chip[aria-pressed="false"] .dot { background: var(--muted); }
+  #sti-app .hint { color: var(--muted); font-size: 12px; }
+
+  #sti-app .sti-layout { display: grid; grid-template-columns: 232px 1fr; gap: 14px; align-items: start; }
+  @container sti (max-width: 860px) { #sti-app .sti-layout { grid-template-columns: 1fr; } }
+
+  #sti-app .sti-side { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  #sti-app .sti-side .grp { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); padding: 10px 12px 4px; }
+  #sti-app .sti-side button.tk {
+    display: flex; width: 100%; align-items: center; gap: 8px; border: 0; background: none;
+    padding: 6px 12px; font: inherit; font-size: 13px; color: var(--ink-1); cursor: pointer; text-align: left;
+  }
+  #sti-app .sti-side button.tk:hover { background: color-mix(in srgb, var(--series-1) 8%, transparent); }
+  #sti-app .sti-side button.tk[aria-current="true"] { background: color-mix(in srgb, var(--series-1) 14%, transparent); box-shadow: inset 3px 0 0 var(--series-1); }
+  #sti-app .tk .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #sti-app .tk .pc { font-size: 12px; font-variant-numeric: tabular-nums; }
+  @container sti (max-width: 860px) {
+    #sti-app .sti-side { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 6px; gap: 4px; }
+    #sti-app .sti-side .grp { display: none; }
+    #sti-app .sti-side button.tk { flex: none; width: auto; border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; }
+    #sti-app .sti-side button.tk[aria-current="true"] { box-shadow: none; border-color: var(--series-1); }
+    #sti-app .tk .nm { max-width: 110px; }
+    #sti-app .sti-controls .hint { display: none; }
+  }
+  @container sti (max-width: 600px) {
+    #sti-app .tile .v { font-size: 19px; }
+    #sti-app .chart-wrap { height: 320px; }
+    #sti-app .ov-wrap { height: 44px; }
+  }
+
+  #sti-app .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 12px 8px; }
+  #sti-app .chart-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 4px; }
+  #sti-app .chart-head .nm { font-weight: 650; font-size: 15px; }
+  #sti-app .chart-head .code { color: var(--muted); font-size: 12px; }
+  #sti-app .chart-wrap { position: relative; height: 430px; touch-action: pan-y; cursor: crosshair; }
+  #sti-app .chart-wrap canvas, #sti-app .ov-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #sti-app .ov-wrap { position: relative; height: 56px; margin-top: 8px; touch-action: pan-y; cursor: grab; }
+  #sti-app .tooltip {
+    position: absolute; pointer-events: none; display: none; z-index: 3; min-width: 150px; max-width: 260px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 8px 10px; font-size: 12px;
+  }
+  #sti-app .tooltip .d { color: var(--ink-2); }
+  #sti-app .tooltip .p { font-size: 16px; font-weight: 650; color: var(--ink-1); }
+  #sti-app .tooltip .r { color: var(--ink-2); margin-top: 1px; }
+  #sti-app .tooltip .ev { display: flex; gap: 6px; align-items: baseline; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--grid); }
+  #sti-app .tooltip .ev .key { width: 14px; height: 0; border-top: 3px solid var(--c); transform: translateY(-3px); flex: none; }
+
+  #sti-app .ev-detail {
+    display: none; margin-top: 10px; border: 1px solid var(--border); border-left: 4px solid var(--c);
+    background: color-mix(in srgb, var(--c) 6%, var(--surface-1));
+    border-radius: 8px; padding: 10px 12px; position: relative;
+  }
+  #sti-app .ev-detail .dt { font-size: 12px; color: var(--ink-2); }
+  #sti-app .ev-detail .tt { font-weight: 650; margin: 1px 0 3px; }
+  #sti-app .ev-detail .bb { font-size: 13px; color: var(--ink-2); }
+  #sti-app .ev-detail .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted); font-size: 15px; cursor: pointer; }
+
+  #sti-app .ev-panel { margin-top: 14px; }
+  #sti-app .ev-panel h2 { font-size: 14px; margin: 0 0 8px; }
+  #sti-app .ev-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; max-height: 330px; overflow-y: auto; padding-right: 2px; }
+  #sti-app .ev-card {
+    display: block; text-align: left; font: inherit; cursor: pointer;
+    background: var(--surface-1); border: 1px solid var(--border); border-left: 4px solid var(--c);
+    border-radius: 8px; padding: 8px 10px; color: var(--ink-1);
+  }
+  #sti-app .ev-card:hover { border-color: var(--c); }
+  #sti-app .ev-card.dim { opacity: 0.5; }
+  #sti-app .ev-card.sel { box-shadow: 0 0 0 2px var(--c); }
+  #sti-app .ev-card .dt { font-size: 11px; color: var(--muted); }
+  #sti-app .ev-card .tt { font-weight: 600; font-size: 13px; margin: 1px 0 2px; }
+  #sti-app .ev-card .bb { font-size: 12px; color: var(--ink-2); }
+
+  #sti-app details.tbl { margin-top: 14px; }
+  #sti-app details.tbl summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
+  #sti-app details.tbl table { border-collapse: collapse; margin-top: 8px; font-size: 12.5px; }
+  #sti-app details.tbl th, #sti-app details.tbl td { border: 1px solid var(--grid); padding: 4px 10px; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-1); background: var(--surface-1); }
+  #sti-app details.tbl th:first-child, #sti-app details.tbl td:first-child { text-align: left; }
+  #sti-app details.tbl th { color: var(--ink-2) !important; font-weight: 600; }
+  #sti-app details.tbl td.pos { color: var(--up); }
+  #sti-app details.tbl td.neg { color: var(--down); }
+
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#top"><span class="logo" aria-hidden="true" style="font-size:9.5px">STI</span><span class="txt">Singapore STI</span></a>
+    <button id="themeBtn" type="button" aria-label="Switch colour theme">Dark mode</button>
+  </div>
+</div>
+
+<div class="layout">
+<main class="wrap" id="top">
+
+  <section class="section" id="sti">
+    <div class="section-grid">
+      <div class="rail">
+        <span class="role">STI dashboard</span>
+      </div>
+      <div class="body-col">
+        <h2>Thirty-eight years of Singapore's market, annotated</h2>
+        <p class="lede">
+          The Straits Times Index and every one of its 30 constituents, with daily prices
+          back to December 1987 for the index. Market crises, Singapore-specific events,
+          policy changes and each company's earnings results are marked on the chart. Use it
+          for context, not for picking stocks; <a href="https://fang89.github.io/Singapore-personal-finance/#etf-singapore-stocks-and-the-sti">SG Finance</a>
+          explains why the index fund beats choosing banks.
+        </p>
+        <p class="embed-cap">
+          Pick a ticker, choose a range, and drag or scroll on the chart to pan and zoom.
+          Click an event card for the story behind it. Compare against the S&amp;P 500,
+          Nasdaq, Hang Seng, Nikkei, Bitcoin or gold with the buttons above the chart.
+        </p>
+      </div>
+    </div>
+
+    <div id="sti-app" aria-label="Straits Times Index dashboard">
+      <p class="sti-loading" id="sti-loading">Loading 38 years of prices…</p>
+  <div class="tiles" id="sti-tiles"></div>
+
+  <div class="sti-controls">
+    <div class="seg" id="sti-ranges" role="group" aria-label="Date range"></div>
+    <div class="seg" id="sti-scaleSeg" role="group" aria-label="Scale">
+      <button type="button" data-scale="lin" aria-pressed="true">Linear</button>
+      <button type="button" data-scale="log" aria-pressed="false">Log</button>
+    </div>
+    <div class="chips" id="sti-catChips" role="group" aria-label="Event categories"></div>
+    <span class="hint" id="sti-benchHint">compare</span>
+    <div class="chips" id="sti-benchChips" role="group" aria-label="Compare against benchmarks"></div>
+    <span class="hint">scroll to zoom · drag to pan · click a flag or card for the story</span>
+  </div>
+
+  <div class="sti-layout">
+    <nav class="sti-side" id="sti-sidebar" aria-label="Tickers"></nav>
+
+    <div>
+      <div class="card">
+        <div class="chart-head">
+          <img class="lg" id="sti-chartLogo" alt="" style="display:none"><span class="nm" id="sti-chartName"></span><span class="code" id="sti-chartCode"></span>
+          <span class="spacer" style="flex:1"></span>
+          <span class="hint" id="sti-rangeLabel"></span>
+        </div>
+        <div class="chart-wrap" id="sti-chartWrap">
+          <canvas id="sti-base"></canvas><canvas id="sti-overlay"></canvas>
+          <div class="tooltip" id="sti-tooltip"></div>
+        </div>
+        <div class="ov-wrap" id="sti-ovWrap"><canvas id="sti-ovCanvas"></canvas></div>
+      </div>
+
+      <div class="ev-detail" id="sti-evDetail">
+        <button class="x" type="button" aria-label="Clear selection" id="sti-evClose">✕</button>
+        <div class="dt"></div><div class="tt"></div><div class="bb"></div>
+      </div>
+
+      <div class="ev-panel">
+        <h2>Key events <span class="hint" id="sti-evCount"></span></h2>
+        <div class="ev-list" id="sti-evList"></div>
+      </div>
+
+      <details class="tbl" id="sti-tableView">
+        <summary>Data table (year-end closes)</summary>
+        <div style="overflow-x:auto"><table id="sti-yearTable"></table></div>
+      </details>
+      <p class="sti-foot">Prices: Yahoo Finance daily closes (unadjusted), <span id="sti-genDate"></span> ·
+        Events curated from public reporting · Not investment advice.</p>
+    </div>
+  </div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- theme toggle ---------- */
+  var root = document.documentElement;
+  var btn = document.getElementById("themeBtn");
+  try {
+    var saved = localStorage.getItem("sgsti-theme");
+    if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  } catch (e) { /* storage blocked; follow the system theme */ }
+
+  btn.addEventListener("click", function () {
+    var next = isDark() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("sgsti-theme", next); } catch (e) { /* ignore */ }
+    label();
+  });
+  function isDark() {
+    return root.getAttribute("data-theme") === "dark" ||
+      (!root.hasAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function label() { btn.textContent = isDark() ? "Light mode" : "Dark mode"; }
+  label();
+
+  /* ---------- load the market data, then the chart ---------- */
+  ["data.js", "benchmarks.js", "logos.js", "earnings.js", "profiles.js", "app.js"].forEach(function (f) {
+    var s = document.createElement("script");
+    s.src = f;
+    s.async = false;   // download in parallel, run in order
+    s.onerror = function () { document.getElementById("sti-loading").textContent = "Could not load the market data."; };
+    document.body.appendChild(s);
+  });
+})();
+</script>
+</body>
+</html>

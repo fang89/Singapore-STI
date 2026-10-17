@@ -827,7 +827,7 @@ ovWrap.addEventListener("pointermove", ev => {
 });
 ["pointerup", "pointercancel"].forEach(t => ovWrap.addEventListener(t, () => { ovDrag = null; ovWrap.style.cursor = "grab"; }));
 
-/* ---------------- theme: follow the guide's toggle ---------------- */
+/* ---------------- theme: follow the page's toggle ---------------- */
 new MutationObserver(() => { renderMain(); renderOverview(); clearOverlay(); refreshChrome(); })
   .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderMain(); renderOverview(); refreshChrome(); });
