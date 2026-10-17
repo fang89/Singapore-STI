@@ -642,9 +642,11 @@ thead th { background: var(--accent-tint); color: var(--accent-ink); }
   label();
 
   /* ---------- load the market data, then the chart ---------- */
+  // a new query string every 10 minutes, so neither the browser nor GitHub's CDN serves stale prices
+  var v = Math.floor(Date.now() / 600000);
   ["data.js", "benchmarks.js", "logos.js", "earnings.js", "profiles.js", "indicators.js", "app.js"].forEach(function (f) {
     var s = document.createElement("script");
-    s.src = f;
+    s.src = f + "?v=" + v;
     s.async = false;   // download in parallel, run in order
     s.onerror = function () { document.getElementById("sti-loading").textContent = "Could not load the market data."; };
     document.body.appendChild(s);
