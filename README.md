@@ -6,7 +6,7 @@ constituents), overlaid with 46 curated market events — crises, Singapore stor
 shifts and index milestones — plus every earnings release Yahoo records for
 each constituent, annotated with whether it beat consensus EPS.
 
-**Live:** https://fang89.github.io/sg-personal-finance/#sti. The markup and styles are
+**Live:** https://fang89.github.io/Singapore-personal-finance/#sti. The markup and styles are
 in the guide's `index.html` (under `#sti-app`); the chart code is `app.js`, which the guide
 loads together with the data files below when the reader scrolls near the section. No
 build step, no dependencies. Run the fetch scripts from inside this folder.
