@@ -1,21 +1,10 @@
 <div align="center">
 
-# 📈 Singapore STI
+# Singapore STI
 
-An interactive chart of the Straits Times Index and all 30 of its constituents,<br>
-marked with the crises, policy changes and earnings results that moved them.
+**The Straits Times Index and its 30 names, daily since Dec 1987, with the tape annotated.**
 
-<br>
-
-[![Open the live dashboard](https://img.shields.io/badge/▶_Open_the_live_dashboard-fang89.github.io%2FSingapore--STI-1d4ed8?style=for-the-badge)](https://fang89.github.io/Singapore-STI/)
-
-**👉 [fang89.github.io/Singapore-STI/](https://fang89.github.io/Singapore-STI/)**
-
-<br>
-
-![No build step](https://img.shields.io/badge/build_step-none-475569)
-![Dependencies](https://img.shields.io/badge/dependencies-0-475569)
-![Licence](https://img.shields.io/badge/licence-MIT-475569)
+[**fang89.github.io/Singapore-STI →**](https://fang89.github.io/Singapore-STI/)
 
 <br>
 
@@ -25,178 +14,168 @@ marked with the crises, policy changes and earnings results that moved them.
 
 ---
 
-Daily closes go back to **December 1987** for the index (2000s onward for most
-constituents). On top of the prices sit 46 curated market events (crises, Singapore
-stories, policy shifts and index milestones) and every earnings release Yahoo records
-for each constituent, marked as a beat or a miss against consensus EPS.
+## The pitch
 
-It started as a section of [SG Finance](https://fang89.github.io/Singapore-personal-finance/),
-the Singapore household money guide, and now lives here on its own.
+Most STI charts show a price line and nothing else. You see the drawdown but not what caused
+it, and you can't tell whether one name is carrying the index or the whole market is moving.
 
-## Features
+This puts the context on the chart: 46 hand-picked macro and local events (Barings, the Asian
+crisis, SARS, Lehman, the property cooling rounds, COVID, the MAS S$5b revival plan), every
+reported earnings print per name marked as a beat or miss against consensus EPS, and two
+indicators that answer "where are we in the cycle?" without pretending to call the next print.
 
-- Canvas line chart with crosshair tooltip, wheel-zoom, drag-pan and an
-  overview brush strip
-- Event annotations on the chart: callout boxes with leader lines when zoomed
-  in, dots on the price line when zoomed out. Cards below list what's in view, and
-  clicking one zooms to ±18 months around it
-- Ticker switcher for the index and its 30 constituents, grouped by sector, showing
-  each ticker's return over the window on screen
-- Range presets (1W / 1M / 3M / 1Y / 5Y / Max, opening on 1M), linear or log scale, and event-category filters (including earnings)
-- Compare against the S&P 500, Nasdaq, Hang Seng, Nikkei, Bitcoin or gold
-- **200-day average** on any ticker, with the days spent below it shaded, and what returns and
-  volatility looked like on each side of it
-- **Market mood**, a 0–100 fear-to-greed reading for the STI built from five price-based
-  measures (trend, breadth, new highs vs lows, drawdown and volatility), drawn under the chart
-  and broken down in a panel with what the STI did next from each mood band. How it is built,
-  the research behind it and how it tested on 38 years of STI history are in
-  [METHODOLOGY.md](METHODOLOGY.md)
-- Light and dark themes (follows the system, with a manual toggle), and a yearly data table
+It started as a section of [SG Finance](https://fang89.github.io/Singapore-personal-finance/) and
+was spun out because it's a market tool, not a household budgeting one.
 
-## How the market mood is calculated
+## What's on the screen
 
-The mood is a 0–100 reading of how fearful or greedy the STI looks, built only from prices.
-Singapore has no options-based fear gauge (like the VIX), no investor-sentiment survey and no
-public fund-flow data, so the mood reads how the market is *behaving* instead, much as CNN's
-Fear & Greed Index does. The code is in [`indicators.js`](indicators.js). [METHODOLOGY.md](METHODOLOGY.md)
-covers the research behind each choice and how the mood has tested on past data.
+- **Price chart.** Index plus all 30 constituents, grouped by sector, with the window's return
+  shown next to each name. Linear or log scale, 1W to max range, zoom and pan.
+- **Event tape.** Crisis, Singapore, policy, index-milestone and earnings flags. Click a card to
+  zoom to ±18 months around it.
+- **Relative.** Overlay the S&P 500, Nasdaq, Hang Seng, Nikkei 225, BTC or gold, rebased to the
+  start of the window.
+- **Name card.** Last close, all-time high, P/E, P/B, trailing dividend yield and market cap.
+- **200-day regime.** On any name: the 200-day simple average, with sub-200 days shaded red,
+  plus annualised return and vol for days spent above versus below it.
+- **Market mood (STI only).** A 0–100 fear/greed composite, drawn under the chart, with its
+  components and the forward-return base rates for each band.
 
-### Step 1: five daily readings
+## Market mood: how it's built
 
-Each reading is calculated every trading day from closing prices up to and including that day.
-Nothing uses later prices.
+There's no VIX for Singapore. No STI options market deep enough to read implied vol off, no AAII-style
+sentiment survey, no public fund-flow series. So the mood is built from what the tape is doing,
+in the spirit of CNN's Fear & Greed. Code: [`indicators.js`](indicators.js). Full research note,
+references and test tables: [METHODOLOGY.md](METHODOLOGY.md).
 
-| # | Reading | Formula on day *t* | Bullish when |
-|---|---|---|---|
-| 1 | **Trend** | STI close ÷ STI 200-day simple average − 1 | high |
-| 2 | **Breadth** | members closing at or above their own 200-day average ÷ members with a 200-day average | high |
-| 3 | **Highs vs lows** | (members at a 252-day closing high − members at a 252-day closing low) ÷ members with a 200-day average | high |
-| 4 | **Drawdown** | STI close ÷ highest STI close of the last 252 days − 1 (zero or negative) | close to 0 |
-| 5 | **Calm** | standard deviation of the last 21 daily STI returns × √252 (annualised volatility) | low |
+### 1. Five inputs, measured at each day's close
 
-Rules for the member-based readings (2 and 3):
+Strictly point-in-time: day *t* only sees closes up to *t*.
 
-- "Members" are the STI's 30 current constituents.
-- Each member's prices are lined up with the STI's trading days. If a member didn't trade on an
-  index day, its last close carries forward for up to 5 days. After that it counts as missing.
-- A member only counts once it has 200 days of history.
-- Breadth and highs vs lows need at least 15 members to count. Before late 2000 there were fewer
-  than 15, so both are left blank.
+| Input | Calc on day *t* | Risk-on when |
+|---|---|---|
+| **Trend** | STI ÷ STI 200-day SMA − 1 | high |
+| **Breadth** | % of names at or above their own 200-day SMA | high |
+| **Highs vs lows** | (names at a 252-day closing high − names at a 252-day closing low) ÷ names with a 200-day SMA | high |
+| **Drawdown** | STI ÷ trailing 252-day high − 1 | near 0 |
+| **Calm** | 21-day realised vol of daily STI returns, annualised (× √252) | low |
 
-### Step 2: rank each reading against its own past
+Housekeeping on the breadth inputs:
 
-The five readings use different units, so each one is turned into a percentile. Today's value is
-ranked against that reading's values over the last 756 trading days (about three years),
-today's included:
+- Each name's closes are lined up with STI trading days. A stale print carries forward up to
+  5 days, then the name drops out.
+- A name counts only once it has 200 days of history.
+- At least 15 names are required, which means breadth and highs vs lows start in late 2000.
+
+### 2. Normalise each input against its own last three years
+
+Different units, so each input becomes a percentile rank of today's value within its trailing
+756 trading days, today included:
 
 ```
 rank = (days below today + (days equal to today + 1) / 2) / days in the window
 ```
 
-Missing days are skipped, and a rank needs at least 252 values (one year) to count. A rank of 1.0
-means the reading is at its most bullish of the last three years. For **Calm**, high volatility is
-fearful, so its rank is flipped: `calm rank = 1 − volatility rank`.
+A rank needs at least 252 observations. Vol is flipped (`calm = 1 − vol rank`) so that 1.0 always
+means the most risk-on reading of the last three years.
 
-Ranking against a rolling window lets the mood adapt as the market changes over the decades.
-A 10% drawdown meant more in a calm decade than in the late 1990s.
+A rolling rank, not a fixed threshold, because regimes shift. A 10% drawdown in a low-vol tape
+carries more information than one in 1998.
 
-### Step 3: average and scale
+### 3. Equal-weight and scale
 
 ```
-mood = 100 × average of the component ranks available that day
+mood = 100 × mean(available component ranks)        # need ≥ 3 of 5
 ```
 
-All components have equal weight. A day needs at least 3 of the 5 ranks to count, so the mood
-starts in 1990 (on trend, drawdown and calm alone) and uses all five from about 2001.
+No optimised weights. The mood runs from 1990 on trend, drawdown and calm, and on all five
+inputs from roughly 2001.
 
-### Step 4: bands
+### 4. Bands
 
-| Mood | Band |
+| Mood | Read |
 |---|---|
-| 0 to under 20 | Extreme fear |
-| 20 to under 40 | Fear |
-| 40 to under 60 | Neutral |
-| 60 to under 80 | Greed |
+| 0–20 | Extreme fear |
+| 20–40 | Fear |
+| 40–60 | Neutral |
+| 60–80 | Greed |
 | 80–100 | Extreme greed |
 
-### Fixed settings
+Every parameter (200d, 252d, 21d, the 3-year window and the 20/40/60/80 cuts) was set from the
+literature before looking at STI results. Nothing was tuned in-sample.
 
-None of these settings were tuned on the STI: the 200-day average, the 252-day high and low,
-21-day volatility, the 3-year ranking window and the cut-offs at 20, 40, 60 and 80 all come from
-published research and were chosen before testing. Changing them to fit the past would make the
-mood look better on historical data without making it more reliable.
+## What the backtest says
 
-### The "what happened next" table
+On 38 years of STI price history:
 
-For each band, the panel takes every day the mood was in that band and measures the STI's return
-21, 63, 126 and 252 trading days later (about 1, 3, 6 and 12 months), plus the share of those days
-when the index was higher.
+**Base rates by mood band, 12 months out.** Forward returns are averaged within each calendar
+year first, because one bear market otherwise contributes hundreds of overlapping days and swamps
+the sample.
 
-Back-to-back days in a crash are not independent: a single bear market can fill a band with
-hundreds of days. Two checks correct for this:
+| Band | Years with a positive 12m forward return | Median year |
+|---|---|---|
+| Extreme fear | 22 of 27 | +15.9% |
+| Fear | 22 of 31 | +5.1% |
+| Neutral | 20 of 35 | +2.9% |
+| Greed | 16 of 34 | −1.1% |
+| Extreme greed | 12 of 24 | −0.6% |
 
-- **Episodes:** a new episode starts only when the mood re-enters a band after about six months
-  (183 calendar days) away from it.
-- **Years higher:** the 12-month results are averaged within each calendar year first. The count
-  is the number of those years that ended higher.
+- **Extreme fear has historically been a decent entry.** The forward distribution skews
+  clearly positive.
+- **Extreme greed is not a short.** Twelve months later it's a coin flip, so it's no reason to
+  sell.
+- **The 200-day SMA is a risk tool, not an alpha source.** Above it: about +10% a year at
+  14% vol. Below it: about +1% at 22% vol. Switching to 0% cash below the line cut max drawdown
+  from −68% to −33%, and CAGR came out 5.7% against 5.1% buy-and-hold. The return edge sits
+  almost entirely in 2008–2026. Monthly out-of-sample R² is roughly zero, so it doesn't predict
+  next month.
+- **RSI(14) failed.** On the STI, overbought readings were followed by *higher* returns than
+  oversold ones. Momentum persists here, so it was left out.
 
-### Caveats
+## Caveats
 
-- Breadth uses today's members, so companies that later left the index are missing (survivorship
-  bias).
-- Returns are price-only, without dividends (about 3–4% a year).
-- Each band has only 14–18 episodes since 1990.
-- The mood describes conditions; it is not a timing signal and not investment advice. To recompute
-  every number, run `tools/backtest.py`.
+- **Survivorship.** Breadth uses today's 30 constituents, not point-in-time membership.
+- **Price return only.** Dividends of roughly 3–4% a year are excluded, which understates every
+  return above.
+- **Frictionless.** No costs, no slippage, and cash earns 0%.
+- **Small N.** Each extreme band has only 14–18 separate episodes since 1990.
+- **Not a signal service.** This is context for sizing and expectations, not a trade trigger, and
+  not investment advice.
 
-## Files
+Every number above can be reproduced with `python3 tools/backtest.py` (needs pandas and numpy).
 
-| File | Purpose |
+## Data and plumbing
+
+All prices are unadjusted daily closes from Yahoo Finance. Earnings history depth varies by name;
+Hongkong Land, CapitaLand Investment, MPACT and FCT have none in Yahoo's records.
+
+There's no build step and no dependencies: static HTML, a canvas chart and data files that are
+plain JS globals. Run it locally with:
+
+```bash
+python3 -m http.server   # → http://localhost:8000
+```
+
+To refresh the data after the close (`pip install yfinance`):
+
+```bash
+python3 fetch_data.py         # prices        → data.js
+python3 fetch_benchmarks.py   # SPX, NDX, HSI, N225, BTC, gold → benchmarks.js
+python3 fetch_earnings.py     # EPS vs consensus → earnings.js
+python3 fetch_profiles.py     # mkt cap, P/E, P/B, yield → profiles.js
+python3 fetch_logos.py        # favicons → logos.js (rarely needed)
+```
+
+Events are hand-curated in the `EVENTS` array at the top of `app.js`.
+
+| File | Role |
 |---|---|
-| `index.html` | The page: markup, styles and the theme toggle |
-| `app.js` | Chart, controls and event code |
-| `indicators.js` | 200-day average and market mood calculations (no drawing) |
-| `data.js` | Price history (`window.STI_DATA`), generated by the fetch script |
-| `benchmarks.js` | Comparison benchmarks (`window.STI_BENCH`) |
-| `earnings.js` | Earnings dates and EPS vs consensus per constituent |
-| `logos.js` | Company favicons embedded as data URIs |
-| `profiles.js` | One-line company blurbs and live market caps |
-| `fetch_data.py` | Refreshes `data.js` from Yahoo Finance (`pip install yfinance`) |
-| `fetch_benchmarks.py` | Refreshes `benchmarks.js` (S&P 500, Nasdaq, Hang Seng, Nikkei, Bitcoin, gold) |
-| `fetch_earnings.py` | Refreshes `earnings.js` |
-| `fetch_logos.py` | Refreshes `logos.js` |
-| `fetch_profiles.py` | Refreshes `profiles.js` (market caps; blurbs curated inside it) |
-| `tools/backtest.py` | Tests the indicators on STI history and prints every table in METHODOLOGY.md (`pip install pandas numpy`) |
-| `METHODOLOGY.md` | How the trend and mood indicators work, and how far to trust them |
+| `index.html` | Page, styles, theme toggle, script loader |
+| `app.js` | Chart, controls, event tape, mood panel |
+| `indicators.js` | 200-day regime and mood calcs (no rendering) |
+| `data.js` · `benchmarks.js` · `earnings.js` · `profiles.js` · `logos.js` | Generated data |
+| `fetch_*.py` | Data refresh scripts |
+| `tools/backtest.py` | Reproduces every table in METHODOLOGY.md |
+| `METHODOLOGY.md` | The full research note |
 
-No build step and no dependencies. To run it locally:
-
-```bash
-python3 -m http.server   # then open http://localhost:8000
-```
-
-## Updating the data
-
-Run these from the repo root:
-
-```bash
-python3 fetch_data.py       # prices
-python3 fetch_benchmarks.py # comparison benchmarks
-python3 fetch_earnings.py   # earnings history
-python3 fetch_logos.py      # logos (rarely needed)
-python3 fetch_profiles.py   # market caps
-```
-
-Events are curated by hand in the `EVENTS` array at the top of `app.js`.
-
-## Notes
-
-- Prices are unadjusted daily closes from Yahoo Finance. Long-history series
-  reflect Yahoo's records, including any splits or re-listings as Yahoo reports them.
-- Earnings history depth varies by ticker. A few tickers (Hongkong Land,
-  CapitaLand Investment, MPACT, FCT) have none in Yahoo's records.
-- Not investment advice.
-
-## Licence
-
-MIT
+MIT licence.
