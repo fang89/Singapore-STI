@@ -53,6 +53,102 @@ the Singapore household money guide, and now lives here on its own.
   [METHODOLOGY.md](METHODOLOGY.md)
 - Light and dark themes (follows the system, with a manual toggle), and a yearly data table
 
+## How the market mood is calculated
+
+The mood is a 0–100 reading of how fearful or greedy the STI looks, built only from prices.
+Singapore has no options-based fear gauge (like the VIX), no investor-sentiment survey and no
+public fund-flow data, so the mood reads how the market is *behaving* instead, much as CNN's
+Fear & Greed Index does. The code is in [`indicators.js`](indicators.js). [METHODOLOGY.md](METHODOLOGY.md)
+covers the research behind each choice and how the mood has tested on past data.
+
+### Step 1: five daily readings
+
+Each reading is calculated every trading day from closing prices up to and including that day.
+Nothing uses later prices.
+
+| # | Reading | Formula on day *t* | Bullish when |
+|---|---|---|---|
+| 1 | **Trend** | STI close ÷ STI 200-day simple average − 1 | high |
+| 2 | **Breadth** | members closing at or above their own 200-day average ÷ members with a 200-day average | high |
+| 3 | **Highs vs lows** | (members at a 252-day closing high − members at a 252-day closing low) ÷ members with a 200-day average | high |
+| 4 | **Drawdown** | STI close ÷ highest STI close of the last 252 days − 1 (zero or negative) | close to 0 |
+| 5 | **Calm** | standard deviation of the last 21 daily STI returns × √252 (annualised volatility) | low |
+
+Rules for the member-based readings (2 and 3):
+
+- "Members" are the STI's 30 current constituents.
+- Each member's prices are lined up with the STI's trading days. If a member didn't trade on an
+  index day, its last close carries forward for up to 5 days. After that it counts as missing.
+- A member only counts once it has 200 days of history.
+- Breadth and highs vs lows need at least 15 members to count. Before late 2000 there were fewer
+  than 15, so both are left blank.
+
+### Step 2: rank each reading against its own past
+
+The five readings use different units, so each one is turned into a percentile. Today's value is
+ranked against that reading's values over the last 756 trading days (about three years),
+today's included:
+
+```
+rank = (days below today + (days equal to today + 1) / 2) / days in the window
+```
+
+Missing days are skipped, and a rank needs at least 252 values (one year) to count. A rank of 1.0
+means the reading is at its most bullish of the last three years. For **Calm**, high volatility is
+fearful, so its rank is flipped: `calm rank = 1 − volatility rank`.
+
+Ranking against a rolling window lets the mood adapt as the market changes over the decades.
+A 10% drawdown meant more in a calm decade than in the late 1990s.
+
+### Step 3: average and scale
+
+```
+mood = 100 × average of the component ranks available that day
+```
+
+All components have equal weight. A day needs at least 3 of the 5 ranks to count, so the mood
+starts in 1990 (on trend, drawdown and calm alone) and uses all five from about 2001.
+
+### Step 4: bands
+
+| Mood | Band |
+|---|---|
+| 0 to under 20 | Extreme fear |
+| 20 to under 40 | Fear |
+| 40 to under 60 | Neutral |
+| 60 to under 80 | Greed |
+| 80–100 | Extreme greed |
+
+### Fixed settings
+
+None of these settings were tuned on the STI: the 200-day average, the 252-day high and low,
+21-day volatility, the 3-year ranking window and the cut-offs at 20, 40, 60 and 80 all come from
+published research and were chosen before testing. Changing them to fit the past would make the
+mood look better on historical data without making it more reliable.
+
+### The "what happened next" table
+
+For each band, the panel takes every day the mood was in that band and measures the STI's return
+21, 63, 126 and 252 trading days later (about 1, 3, 6 and 12 months), plus the share of those days
+when the index was higher.
+
+Back-to-back days in a crash are not independent: a single bear market can fill a band with
+hundreds of days. Two checks correct for this:
+
+- **Episodes:** a new episode starts only when the mood re-enters a band after about six months
+  (183 calendar days) away from it.
+- **Years higher:** the 12-month results are averaged within each calendar year first. The count
+  is the number of those years that ended higher.
+
+### Caveats
+
+- Breadth uses today's members, so companies that later left the index are missing (survivorship
+  bias).
+- Returns are price-only, without dividends (about 3–4% a year).
+- Each band has only 14–18 episodes since 1990.
+- The mood describes conditions; it is not a timing signal and not investment advice. To recompute
+  every number, run `tools/backtest.py`.
+
 ## Files
 
 | File | Purpose |
